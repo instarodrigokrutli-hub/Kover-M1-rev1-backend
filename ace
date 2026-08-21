@@ -1,0 +1,24 @@
+#!/usr/bin/env node
+
+/*
+|--------------------------------------------------------------------------
+| Ace Commands
+|--------------------------------------------------------------------------
+|
+| Este arquivo é o ponto de entrada da CLI do Adonis (o "ace").
+| É ele que roda quando você digita, por exemplo:
+|
+|   node ace migration:run
+|   node ace make:controller Tecnicos
+|   node ace serve --watch
+|
+| Você não precisa mexer aqui no dia a dia.
+|
+*/
+
+process.env.NODE_ENV = process.env.NODE_ENV || 'development'
+process.env.ACE_CWD = process.env.ACE_CWD || __dirname
+
+const { Ignitor } = require('@adonisjs/core/build/src/Ignitor')
+
+new Ignitor(__dirname).ace()

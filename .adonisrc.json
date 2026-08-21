@@ -1,0 +1,38 @@
+{
+  "name": "kover-manutencao-backend",
+
+  "typescript": false,
+
+  "providers": [
+    "./providers/AppProvider",
+    "@adonisjs/core",
+    "@adonisjs/lucid",
+    "@adonisjs/cors"
+  ],
+
+  "aceProviders": ["@adonisjs/repl"],
+
+  "preloads": ["./start/routes", "./start/kernel"],
+
+  "metaFiles": [
+    {
+      "pattern": "resources/views/**/*.edge",
+      "reloadServer": false
+    }
+  ],
+
+  "commands": [
+    "@adonisjs/core/build/commands",
+    "@adonisjs/lucid/build/commands"
+  ],
+
+  "directories": {
+    "config": "config",
+    "public": "public",
+    "database": "database",
+    "migrations": "database/migrations",
+    "start": "start",
+    "tmp": "tmp",
+    "views": "resources/views"
+  }
+}
