@@ -6,7 +6,7 @@
   "main": "server.js",
   "scripts": {
     "postinstall": "node ace generate:manifest",
-    "dev": "node ace serve --watch",
+    "dev": "node --watch server.js",
     "start": "node server.js",
     "migration:run": "node ace migration:run",
     "migration:rollback": "node ace migration:rollback",
