@@ -16,6 +16,7 @@
 
 require('reflect-metadata')
 require('source-map-support').install({ handleUncaughtExceptions: false })
+require('./start/globals')
 
 const { Ignitor } = require('@adonisjs/core/build/src/Ignitor')
 

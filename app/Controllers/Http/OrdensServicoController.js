@@ -11,7 +11,7 @@ class OrdensServicoController {
     const { page = 1, perPage = 20, status } = request.qs()
 
     const query = OrdemServico.query()
-      .with('tecnico') // eager load: já traz o técnico junto, evita N+1 query
+      .preload('tecnico') // eager load: já traz o técnico junto, evita N+1 query
       .orderBy('data_abertura', 'desc')
 
     if (status) {
@@ -23,10 +23,7 @@ class OrdensServicoController {
 
   // POST /api/v1/ordens-servico
   async store({ request, response }) {
-    const dados = await request.validate({
-      rules: new CreateOrdemServico().rules,
-      messages: new CreateOrdemServico().messages,
-    })
+    const dados = await request.validate(CreateOrdemServico)
 
     const os = await OrdemServico.create(dados)
 
@@ -37,7 +34,7 @@ class OrdensServicoController {
   async show({ params, response }) {
     const os = await OrdemServico.query()
       .where('id', params.id)
-      .with('tecnico')
+      .preload('tecnico')
       .first()
 
     if (!os) {

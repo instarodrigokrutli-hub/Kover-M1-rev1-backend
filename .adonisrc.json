@@ -3,14 +3,19 @@
 
   "typescript": false,
 
+  "exceptionHandlerNamespace": "App/Exceptions/Handler",
+
   "providers": [
     "./providers/AppProvider",
     "@adonisjs/core",
-    "@adonisjs/lucid",
-    "@adonisjs/cors"
+    "@adonisjs/lucid"
   ],
 
   "aceProviders": ["@adonisjs/repl"],
+
+  "aliases": {
+    "App": "app"
+  },
 
   "preloads": ["./start/routes", "./start/kernel"],
 

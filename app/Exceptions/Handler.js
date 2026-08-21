@@ -1,6 +1,6 @@
 'use strict'
 
-const BaseExceptionHandler = use('BaseExceptionHandler')
+const BaseExceptionHandler = use('Adonis/Core/HttpExceptionHandler')
 
 /*
 |--------------------------------------------------------------------------

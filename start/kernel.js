@@ -13,15 +13,17 @@
 |
 |   globalMiddleware  -> roda em TODA requisição, sempre.
 |   namedMiddleware    -> só roda quando a rota pede (ex: rota.middleware(['auth'])).
-|   serverMiddleware   -> roda antes até de chegar no roteador (nível mais baixo).
 |
 */
 
-const Server = use('Server')
+const Server = use('Adonis/Core/Server')
 
+// Em TypeScript isso normalmente é `() => import('@ioc:Adonis/Core/BodyParser')`
+// (o `@ioc:` é reescrito pelo compilador). Em JS puro, o mesmo formato "lazy
+// import" (função que resolve pra { default: Classe }) é escrito à mão — é o
+// único jeito da classe ser instanciada corretamente pelo container.
 const globalMiddleware = [
-  'Adonis/Middleware/BodyParser',
-  'Adonis/Middleware/Cors',
+  () => Promise.resolve({ default: use('Adonis/Core/BodyParser') }),
 ]
 
 const namedMiddleware = {
@@ -30,8 +32,5 @@ const namedMiddleware = {
   // auth: 'Adonis/Middleware/Auth',
 }
 
-const serverMiddleware = []
-
-Server.registerGlobal(globalMiddleware)
-  .registerNamed(namedMiddleware)
-  .use(serverMiddleware)
+Server.middleware.register(globalMiddleware)
+Server.middleware.registerNamed(namedMiddleware)

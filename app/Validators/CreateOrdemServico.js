@@ -1,26 +1,31 @@
 'use strict'
 
+const { schema, rules } = use('Adonis/Core/Validator')
+
 class CreateOrdemServico {
-  get rules() {
-    return {
-      numero: 'required|string|max:30|unique:ordens_servicos,numero',
-      titulo: 'required|string|max:150',
-      descricao: 'string',
-      status: 'string|in:aberta,em_andamento,concluida,cancelada',
-      prioridade: 'string|in:baixa,media,alta,urgente',
-      tecnico_id: 'integer|exists:tecnicos,id',
-      data_abertura: 'required|date',
-    }
+  constructor(ctx) {
+    this.ctx = ctx
   }
 
-  get messages() {
-    return {
-      'numero.required': 'Informe o número da OS.',
-      'numero.unique': 'Já existe uma OS com esse número.',
-      'titulo.required': 'Informe o título da OS.',
-      'tecnico_id.exists': 'Técnico informado não existe.',
-      'data_abertura.required': 'Informe a data de abertura.',
-    }
+  schema = schema.create({
+    numero: schema.string({ trim: true }, [
+      rules.maxLength(30),
+      rules.unique({ table: 'ordens_servicos', column: 'numero' }),
+    ]),
+    titulo: schema.string({ trim: true }, [rules.maxLength(150)]),
+    descricao: schema.string.optional({ trim: true }),
+    status: schema.enum.optional(['aberta', 'em_andamento', 'concluida', 'cancelada']),
+    prioridade: schema.enum.optional(['baixa', 'media', 'alta', 'urgente']),
+    tecnico_id: schema.number.optional([rules.exists({ table: 'tecnicos', column: 'id' })]),
+    data_abertura: schema.date(),
+  })
+
+  messages = {
+    'numero.required': 'Informe o número da OS.',
+    'numero.unique': 'Já existe uma OS com esse número.',
+    'titulo.required': 'Informe o título da OS.',
+    'tecnico_id.exists': 'Técnico informado não existe.',
+    'data_abertura.required': 'Informe a data de abertura.',
   }
 }
 

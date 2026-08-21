@@ -1,29 +1,44 @@
 'use strict'
 
-const Model = use('Model')
+const { BaseModel } = use('Adonis/Lucid/Orm')
+const dateTimeColumn = require('./dateTimeColumn')
 
 /*
 |--------------------------------------------------------------------------
 | app/Models/Tecnico.js
 |--------------------------------------------------------------------------
 |
-| Um "Model" representa UMA TABELA do banco. Aqui, por padrão, essa
-| classe representa a tabela "tecnicos" (o Lucid pluraliza e deixa
-| minúsculo o nome da classe automaticamente — não precisa configurar).
+| Um "Model" representa UMA TABELA do banco (aqui, "tecnicos").
 |
-| Não existem decorators nem "schema" declarado aqui: as colunas vêm
-| direto da tabela (veja database/migrations/..._tecnicos_schema.js).
-| Isso que faz esse estilo funcionar em JavaScript puro, sem TypeScript.
+| O Lucid do AdonisJS 5 normalmente declara colunas e relacionamentos com
+| decorators (@column, @hasMany), o que exige TypeScript. Em JavaScript
+| puro, o mesmo resultado é obtido chamando $addColumn/$addRelation
+| dentro de boot() — é a própria API interna que os decorators usam.
 |
 */
-class Tecnico extends Model {
-  // Timestamps automáticos: o Lucid preenche created_at/updated_at
-  // sozinho ao salvar (createdAtColumn/updatedAtColumn já são o padrão).
+class Tecnico extends BaseModel {
+  static boot() {
+    super.boot()
 
-  // Relacionamento: um técnico pode ter várias ordens de serviço.
-  ordensServico() {
-    return this.hasMany('App/Models/OrdemServico', 'id', 'tecnico_id')
+    this.$addColumn('id', { isPrimary: true })
+    this.$addColumn('nome', {})
+    this.$addColumn('email', {})
+    this.$addColumn('telefone', {})
+    this.$addColumn('matricula', {})
+    this.$addColumn('ativo', {})
+    this.$addColumn('created_at', dateTimeColumn({ autoCreate: true, autoUpdate: true }))
+    this.$addColumn('updated_at', dateTimeColumn({ autoUpdate: true }))
+
+    // Relacionamento: um técnico pode ter várias ordens de serviço.
+    this.$addRelation('ordensServico', 'hasMany', () => require('./OrdemServico'), {
+      localKey: 'id',
+      foreignKey: 'tecnico_id',
+    })
   }
 }
+
+// Decorators chamam Model.boot() automaticamente ao definir a classe; como
+// não há decorators aqui, isso precisa ser feito manualmente.
+Tecnico.boot()
 
 module.exports = Tecnico

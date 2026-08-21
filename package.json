@@ -5,6 +5,7 @@
   "description": "API backend do Kover Manutenção, feita com AdonisJS em JavaScript puro (sem TypeScript).",
   "main": "server.js",
   "scripts": {
+    "postinstall": "node ace generate:manifest",
     "dev": "node ace serve --watch",
     "start": "node server.js",
     "migration:run": "node ace migration:run",
@@ -16,16 +17,18 @@
     "@adonisjs/core": "^5.9.0",
     "@adonisjs/lucid": "^18.4.0",
     "@adonisjs/repl": "^3.1.11",
-    "@adonisjs/validator": "^11.0.0",
-    "@adonisjs/cors": "^1.0.7",
     "luxon": "^3.4.4",
     "pg": "^8.11.5",
     "proxy-addr": "^2.0.7",
     "reflect-metadata": "^0.2.1",
-    "source-map-support": "^0.5.21"
+    "source-map-support": "^0.5.21",
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "@adonisjs/assembler": "^5.9.5",
     "pino-pretty": "^10.3.1"
+  },
+  "allowScripts": {
+    "sqlite3@5.1.7": true
   }
 }

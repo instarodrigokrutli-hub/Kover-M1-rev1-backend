@@ -17,13 +17,17 @@ migrations, validators) é o mesmo, muda a sintaxe (ESM + TypeScript).
 ## Como rodar
 
 ```bash
-cd backend
 npm install
 cp .env.example .env
-node ace generate:key        # gera a APP_KEY e já escreve no .env
+node ace generate:key        # imprime uma chave — cole ela em APP_KEY= no .env
 node ace migration:run       # cria as tabelas no banco configurado no .env
 npm run dev                  # sobe a API em http://localhost:3333 com reload automático
 ```
+
+Por padrão (`DB_CONNECTION=sqlite` no `.env.example`) o banco é um arquivo SQLite
+em `database/kover_manutencao.sqlite3` — não precisa instalar nada. Pra usar
+Postgres de verdade, troque `DB_CONNECTION` pra `pg` e preencha as variáveis
+`PG_*` (ver `config/database.js`).
 
 ## Estrutura de pastas — o que é cada coisa
 

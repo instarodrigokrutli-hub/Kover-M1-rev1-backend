@@ -34,10 +34,7 @@ class TecnicosController {
 
   // POST /api/v1/tecnicos
   async store({ request, response }) {
-    const dados = await request.validate({
-      rules: new CreateTecnico().rules,
-      messages: new CreateTecnico().messages,
-    })
+    const dados = await request.validate(CreateTecnico)
 
     const tecnico = await Tecnico.create(dados)
 

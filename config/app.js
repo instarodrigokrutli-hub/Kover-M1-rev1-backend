@@ -11,7 +11,7 @@
 |
 */
 
-const Env = use('Env')
+const Env = use('Adonis/Core/Env')
 
 module.exports = {
   name: Env.get('APP_NAME', 'kover-manutencao-backend'),
@@ -24,6 +24,15 @@ module.exports = {
     allowMethodSpoofing: false,
     subdomainOffset: 2,
     trustProxy: require('proxy-addr').compile('loopback'),
+
+    cookie: {
+      domain: '',
+      path: '/',
+      maxAge: '2h',
+      httpOnly: true,
+      secure: false,
+      sameSite: false,
+    },
   },
 
   logger: {

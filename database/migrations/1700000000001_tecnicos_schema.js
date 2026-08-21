@@ -1,6 +1,6 @@
 'use strict'
 
-const Schema = use('Schema')
+const Schema = use('Adonis/Lucid/Schema')
 
 /*
 |--------------------------------------------------------------------------
@@ -19,7 +19,7 @@ const Schema = use('Schema')
 */
 class TecnicosSchema extends Schema {
   up() {
-    this.create('tecnicos', (table) => {
+    this.schema.createTable('tecnicos', (table) => {
       table.increments('id')
       table.string('nome', 120).notNullable()
       table.string('email', 120).notNullable().unique()
@@ -31,7 +31,7 @@ class TecnicosSchema extends Schema {
   }
 
   down() {
-    this.drop('tecnicos')
+    this.schema.dropTable('tecnicos')
   }
 }
 

@@ -19,6 +19,8 @@
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
 process.env.ACE_CWD = process.env.ACE_CWD || __dirname
 
+require('./start/globals')
+
 const { Ignitor } = require('@adonisjs/core/build/src/Ignitor')
 
-new Ignitor(__dirname).ace()
+new Ignitor(__dirname).ace().handle(process.argv.slice(2))

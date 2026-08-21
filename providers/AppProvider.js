@@ -1,7 +1,5 @@
 'use strict'
 
-const { ServiceProvider } = require('@adonisjs/fold')
-
 /*
 |--------------------------------------------------------------------------
 | providers/AppProvider.js
@@ -13,10 +11,17 @@ const { ServiceProvider } = require('@adonisjs/fold')
 | models, validators) você NÃO precisa mexer aqui — é só pra
 | integrações mais "de infraestrutura".
 |
+| No AdonisJS 5 um Provider é uma classe simples (sem herdar de nada),
+| que recebe a instância da Application no construtor.
+|
 */
-class AppProvider extends ServiceProvider {
+class AppProvider {
+  constructor(app) {
+    this.app = app
+  }
+
   register() {
-    // this.app.singleton('App/Services/AlgumaCoisa', () => new AlgumaCoisa())
+    // this.app.container.singleton('App/Services/AlgumaCoisa', () => new AlgumaCoisa())
   }
 
   async boot() {

@@ -6,25 +6,46 @@
 |--------------------------------------------------------------------------
 |
 | Controla como o Adonis lê o corpo (body) das requisições:
-| JSON, formulários e upload de arquivos.
+| JSON, formulários, texto puro e upload de arquivos.
 |
 */
 
 module.exports = {
-  parse: ['json', 'form'],
+  whitelistedMethods: ['POST', 'PUT', 'PATCH', 'DELETE'],
 
   json: {
-    types: ['application/json', 'application/json; charset=utf-8'],
+    encoding: 'utf-8',
     limit: '1mb',
+    strict: true,
+    types: [
+      'application/json',
+      'application/json-patch+json',
+      'application/vnd.api+json',
+      'application/csp-report',
+    ],
   },
 
   form: {
-    types: ['application/x-www-form-urlencoded'],
+    encoding: 'utf-8',
     limit: '1mb',
+    queryString: {},
+    convertEmptyStringsToNull: true,
+    types: ['application/x-www-form-urlencoded'],
   },
 
-  files: {
-    types: ['multipart/form-data'],
+  raw: {
+    encoding: 'utf-8',
+    limit: '1mb',
+    queryString: {},
+    types: ['text/*'],
+  },
+
+  multipart: {
+    autoProcess: true,
+    processManually: [],
+    encoding: 'utf-8',
+    maxFields: 1000,
     limit: '20mb',
+    types: ['multipart/form-data'],
   },
 }

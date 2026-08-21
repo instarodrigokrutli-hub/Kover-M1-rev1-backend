@@ -15,7 +15,7 @@
 |
 */
 
-const Route = use('Route')
+const Route = use('Adonis/Core/Route')
 
 // Rota simples, só pra confirmar que a API está no ar.
 Route.get('/', async () => {

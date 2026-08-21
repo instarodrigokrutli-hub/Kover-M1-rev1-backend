@@ -11,7 +11,8 @@
 |
 */
 
-const Env = use('Env')
+const Env = use('Adonis/Core/Env')
+const Application = use('Adonis/Core/Application')
 
 module.exports = {
   connection: Env.get('DB_CONNECTION', 'pg'),
@@ -27,6 +28,18 @@ module.exports = {
         database: Env.get('PG_DB_NAME', 'kover_manutencao'),
         ssl: Env.get('PG_SSL', false),
       },
+      healthCheck: false,
+      debug: false,
+    },
+
+    // Banco local usado enquanto o Postgres definitivo não é configurado
+    // (ver README) — troque DB_CONNECTION para "pg" quando migrar.
+    sqlite: {
+      client: 'sqlite3',
+      connection: {
+        filename: Application.databasePath(Env.get('SQLITE_FILENAME', 'kover_manutencao.sqlite3')),
+      },
+      useNullAsDefault: true,
       healthCheck: false,
       debug: false,
     },
