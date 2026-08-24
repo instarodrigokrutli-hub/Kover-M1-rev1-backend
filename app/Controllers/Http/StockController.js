@@ -59,6 +59,7 @@ class StockController {
           unit_value_snapshot: material.unit_value,
           total_value: material.unit_value * data.quantity,
           performed_by_user: user.id,
+          reason: data.reason,
           nf_number: data.nf_number || null,
           oc_number: data.oc_number || null,
           justification: data.justification || null,

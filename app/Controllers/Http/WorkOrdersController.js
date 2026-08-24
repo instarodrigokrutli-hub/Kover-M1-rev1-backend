@@ -9,12 +9,17 @@ const CreateWorkOrder = require('../../Validators/CreateWorkOrder')
 const EvaluateWorkOrder = require('../../Validators/EvaluateWorkOrder')
 
 class WorkOrdersController {
-  // GET /work-orders
+  // GET /work-orders — status aceita lista separada por vírgula (ex.: "aceita,em_atendimento,pausada").
   async index({ request }) {
-    const { page = 1, perPage = 20, status } = request.qs()
+    const { page = 1, perPage = 20, status, requester_user_id } = request.qs()
 
     const query = WorkOrder.query().preload('machine').preload('technician').orderBy('created_at', 'desc')
-    if (status) query.where('status', status)
+    if (status) {
+      const statuses = String(status).split(',').map((s) => s.trim()).filter(Boolean)
+      if (statuses.length > 1) query.whereIn('status', statuses)
+      else if (statuses.length === 1) query.where('status', statuses[0])
+    }
+    if (requester_user_id) query.where('requester_user_id', requester_user_id)
 
     return query.paginate(page, perPage)
   }
@@ -81,11 +86,11 @@ class WorkOrdersController {
       .where('id', params.id)
       .preload('machine')
       .preload('technician')
-      .preload('materials', (q) => q.preload('material'))
+      .preload('materials', (q) => q.preload('material').preload('technician'))
       .preload('comments')
       .preload('events')
       .preload('participants')
-      .preload('pauses')
+      .preload('pauses', (q) => q.preload('technician'))
       .first()
 
     if (!workOrder) return response.status(404).json({ message: 'OS não encontrada.' })

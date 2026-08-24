@@ -6,6 +6,7 @@ const UserRole = require('../../Models/UserRole')
 const Jwt = require('../../Services/Jwt')
 const AuditLogger = require('../../Services/AuditLogger')
 const LoginUser = require('../../Validators/LoginUser')
+const ChangePassword = require('../../Validators/ChangePassword')
 
 class AuthController {
   // POST /auth/login
@@ -72,6 +73,23 @@ class AuthController {
   // GET /auth/me
   async me({ user }) {
     return user
+  }
+
+  // PATCH /auth/password — troca a própria senha (qualquer papel autenticado).
+  async changePassword({ request, response, user }) {
+    const { current_password, new_password } = await request.validate(ChangePassword)
+
+    const validPassword = await Hash.verify(user.password_hash, current_password)
+    if (!validPassword) {
+      return response.status(401).json({ message: 'Senha atual incorreta.' })
+    }
+
+    user.password_hash = await Hash.make(new_password)
+    await user.save()
+
+    await AuditLogger.log({ user, request }, { action: 'PASSWORD_CHANGED', entityType: 'users', entityId: user.id })
+
+    return response.json({ ok: true })
   }
 }
 

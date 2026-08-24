@@ -14,7 +14,7 @@ class UsersController {
   // GET /users
   async index(ctx) {
     assertRole(ctx, ['admin'])
-    const users = await User.query().preload('roles').orderBy('full_name', 'asc')
+    const users = await User.query().preload('roles').preload('sector').orderBy('full_name', 'asc')
     return users
   }
 
@@ -47,7 +47,7 @@ class UsersController {
       matricula: data.matricula || null,
       sector_id: data.sector_id || null,
       turno: data.turno || null,
-      status: 'ativo',
+      status: data.status || 'ativo',
     })
     await UserRole.create({ user_id: user.id, role: data.role })
 

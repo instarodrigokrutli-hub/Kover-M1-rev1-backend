@@ -8,6 +8,7 @@ const Machine = require('../../Models/Machine')
 const Material = require('../../Models/Material')
 const StockMovement = require('../../Models/StockMovement')
 const AuditLogger = require('../../Services/AuditLogger')
+const { assertRole } = require('../../Services/Authorization')
 const CreateInternalWorkOrder = require('../../Validators/CreateInternalWorkOrder')
 
 async function ensureMachine(data) {
@@ -23,6 +24,29 @@ async function ensureMachine(data) {
 }
 
 class InternalWorkOrdersController {
+  // GET /internal-work-orders/all — visão admin/coordenador (equipe inteira),
+  // com filtros. Precisa vir antes do Route.resource p/ não colidir com :id.
+  async indexAll(ctx) {
+    assertRole(ctx, ['admin', 'coordenador'])
+    const { request } = ctx
+    const { id, technician_id, machine_id, sector, from, to, page = 1, perPage = 500 } = request.qs()
+
+    const query = InternalWorkOrder.query()
+      .preload('machine')
+      .preload('technician')
+      .preload('materials', (q) => q.preload('material'))
+      .orderBy('opened_at', 'desc')
+
+    if (id) query.where('id', id)
+    if (technician_id) query.where('technician_id', technician_id)
+    if (machine_id) query.where('machine_id', machine_id)
+    if (sector) query.whereRaw('lower(sector) like ?', [`%${String(sector).toLowerCase()}%`])
+    if (from) query.where('opened_at', '>=', `${from} 00:00:00`)
+    if (to) query.where('opened_at', '<=', `${to} 23:59:59`)
+
+    return query.paginate(page, perPage)
+  }
+
   // GET /internal-work-orders — só as próprias do técnico logado.
   async index({ request, technician }) {
     const { page = 1, perPage = 20 } = request.qs()

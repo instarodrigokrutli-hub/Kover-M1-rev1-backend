@@ -20,6 +20,7 @@ Route.group(() => {
   Route.post('auth/login', 'AuthController.login')
   Route.post('auth/claim-first-admin', 'AuthController.claimFirstAdmin')
   Route.get('auth/me', 'AuthController.me').middleware(['auth'])
+  Route.patch('auth/password', 'AuthController.changePassword').middleware(['auth'])
 
   // ---- Usuários (admin-only) ------------------------------------------
   Route.get('users', 'UsersController.index').middleware(['auth'])
@@ -39,8 +40,14 @@ Route.group(() => {
   })
 
   // ---- Máquinas ---------------------------------------------------------
+  // index/show: lidos tanto por usuários quanto por técnicos (anyAuth) — a
+  // OS interna do técnico precisa listar/criar máquinas na hora de abrir.
   Route.resource('machines', 'MachinesController').apiOnly().middleware({
-    '*': ['auth'],
+    index: ['anyAuth'],
+    show: ['anyAuth'],
+    store: ['auth'],
+    update: ['auth'],
+    destroy: ['auth'],
   })
 
   // ---- Categorias ---------------------------------------------------------
@@ -54,6 +61,10 @@ Route.group(() => {
   })
 
   // ---- Materiais / Estoque ----------------------------------------------
+  // Precisa vir ANTES do Route.resource('materials', ...) — senão GET /materials/:id
+  // (show) capturaria "generate-code" como :id.
+  Route.get('materials/generate-code', 'MaterialsController.generateCode').middleware(['auth'])
+
   // index/show: lidos tanto por usuários quanto por técnicos (anyAuth);
   // store/update/destroy exigem admin (checado dentro do controller).
   Route.resource('materials', 'MaterialsController').apiOnly().middleware({
@@ -64,6 +75,7 @@ Route.group(() => {
     destroy: ['auth'],
   })
   Route.post('materials/bulk-import', 'MaterialsController.bulkImport').middleware(['auth'])
+  Route.post('materials/search-similar', 'MaterialsController.searchSimilar').middleware(['auth'])
   Route.post('stock/adjust', 'StockController.adjust').middleware(['auth'])
   Route.get('stock/movements', 'StockController.index').middleware(['auth'])
 
@@ -71,8 +83,14 @@ Route.group(() => {
   Route.get('withdrawals/mine', 'WithdrawalsController.mine').middleware(['techAuth'])
 
   // ---- Ordens de Serviço (externas) --------------------------------------
+  // index/show: lidos tanto por produção/PCM (JWT) quanto por técnicos
+  // (cookie) — a tela do técnico lista/abre OS por este mesmo endpoint.
   Route.resource('work-orders', 'WorkOrdersController').apiOnly().middleware({
-    '*': ['auth'],
+    index: ['anyAuth'],
+    show: ['anyAuth'],
+    store: ['auth'],
+    update: ['auth'],
+    destroy: ['auth'],
   })
   Route.patch('work-orders/:id/evaluate', 'WorkOrdersController.evaluate').middleware(['auth'])
 
@@ -90,6 +108,10 @@ Route.group(() => {
   ).middleware(['techAuth'])
 
   // ---- Ordens de Serviço Internas ----------------------------------------
+  // Precisa vir ANTES do Route.resource — senão GET /internal-work-orders/:id
+  // (show, techAuth) capturaria "all" como :id.
+  Route.get('internal-work-orders/all', 'InternalWorkOrdersController.indexAll').middleware(['auth'])
+
   Route.resource('internal-work-orders', 'InternalWorkOrdersController')
     .apiOnly()
     .middleware({ '*': ['techAuth'] })

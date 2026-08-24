@@ -10,6 +10,7 @@ class CreateWithdrawal {
   schema = schema.create({
     material_id: schema.number([rules.exists({ table: 'materials', column: 'id' })]),
     quantity: schema.number([rules.range(0.0001, Number.MAX_SAFE_INTEGER)]),
+    notes: schema.string.optional({ trim: true }),
   })
 
   messages = {

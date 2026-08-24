@@ -36,6 +36,19 @@ class MaterialsController {
     return json
   }
 
+  // GET /materials/generate-code — sugestão de código único p/ o form de criação.
+  async generateCode(ctx) {
+    assertRole(ctx, ['admin'])
+    for (let i = 0; i < 30; i++) {
+      const candidate = generateCode()
+      const exists = await Material.query().where('code', candidate).first()
+      if (!exists) return { code: candidate }
+    }
+    return ctx.response
+      .status(500)
+      .json({ message: 'Não foi possível gerar código único, tente novamente.' })
+  }
+
   // POST /materials
   async store(ctx) {
     assertRole(ctx, ['admin'])
@@ -118,6 +131,25 @@ class MaterialsController {
     })
 
     return response.status(204).send()
+  }
+
+  // POST /materials/search-similar — aviso de nome parecido no form de criação.
+  async searchSimilar(ctx) {
+    assertRole(ctx, ['admin'])
+    const { name } = ctx.request.only(['name'])
+    const tokens = String(name || '')
+      .toLowerCase()
+      .split(/\s+/)
+      .map((t) => t.replace(/[^a-z0-9-]/gi, ''))
+      .filter((t) => t.length >= 3)
+      .slice(0, 3)
+    if (!tokens.length) return []
+
+    const query = Material.query().select('id', 'code', 'name').limit(8)
+    query.where((builder) => {
+      tokens.forEach((t) => builder.orWhereRaw('lower(name) like ?', [`%${t}%`]))
+    })
+    return query
   }
 
   // POST /materials/bulk-import

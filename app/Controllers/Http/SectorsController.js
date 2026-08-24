@@ -5,9 +5,13 @@ const { assertRole } = require('../../Services/Authorization')
 const CreateSector = require('../../Validators/CreateSector')
 
 class SectorsController {
-  // GET /sectors
-  async index() {
-    return Sector.query().where('active', true).orderBy('name', 'asc')
+  // GET /sectors — por padrão lista todos (admin precisa ver inativos para
+  // poder reativar); passe ?active=true para filtrar só os ativos (dropdowns).
+  async index({ request }) {
+    const { active } = request.qs()
+    const query = Sector.query().orderBy('name', 'asc')
+    if (active !== undefined) query.where('active', active === 'true' || active === '1')
+    return query
   }
 
   // POST /sectors
@@ -30,10 +34,11 @@ class SectorsController {
   async update(ctx) {
     assertRole(ctx, ['admin'])
     const { params, request, response } = ctx
-    const { name } = request.only(['name'])
+    const { name, active } = request.only(['name', 'active'])
     const sector = await Sector.find(params.id)
     if (!sector) return response.status(404).json({ message: 'Setor não encontrado.' })
     if (name) sector.name = name
+    if (active !== undefined) sector.active = active
     await sector.save()
     return sector
   }

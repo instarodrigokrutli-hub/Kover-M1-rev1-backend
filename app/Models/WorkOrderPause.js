@@ -13,6 +13,11 @@ class WorkOrderPause extends BaseModel {
     this.$addColumn('started_at', dateTimeColumn({ autoCreate: true }))
     this.$addColumn('ended_at', dateTimeColumn())
     this.$addColumn('created_at', dateTimeColumn({ autoCreate: true }))
+
+    this.$addRelation('technician', 'belongsTo', () => require('./Technician'), {
+      localKey: 'id',
+      foreignKey: 'technician_id',
+    })
   }
 }
 

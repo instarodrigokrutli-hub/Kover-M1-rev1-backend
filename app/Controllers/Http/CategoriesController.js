@@ -5,9 +5,13 @@ const { assertRole } = require('../../Services/Authorization')
 const CreateCategory = require('../../Validators/CreateCategory')
 
 class CategoriesController {
-  // GET /categories
-  async index() {
-    return Category.query().where('active', true).orderBy('name', 'asc')
+  // GET /categories — por padrão lista todas (admin precisa ver inativas
+  // para poder reativar); passe ?active=true para filtrar só as ativas.
+  async index({ request }) {
+    const { active } = request.qs()
+    const query = Category.query().orderBy('name', 'asc')
+    if (active !== undefined) query.where('active', active === 'true' || active === '1')
+    return query
   }
 
   // POST /categories
@@ -30,10 +34,11 @@ class CategoriesController {
   async update(ctx) {
     assertRole(ctx, ['admin'])
     const { params, request, response, user } = ctx
-    const { name } = request.only(['name'])
+    const { name, active } = request.only(['name', 'active'])
     const category = await Category.find(params.id)
     if (!category) return response.status(404).json({ message: 'Categoria não encontrada.' })
     if (name) category.name = name
+    if (active !== undefined) category.active = active
     category.updated_by = user.id
     await category.save()
     return category

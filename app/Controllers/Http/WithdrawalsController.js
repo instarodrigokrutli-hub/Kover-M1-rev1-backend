@@ -10,7 +10,7 @@ class WithdrawalsController {
   // POST /withdrawals
   async store(ctx) {
     const { request, response, technician } = ctx
-    const { material_id, quantity } = await request.validate(CreateWithdrawal)
+    const { material_id, quantity, notes } = await request.validate(CreateWithdrawal)
 
     const material = await Material.find(material_id)
     if (!material || material.status !== 'ativo') {
@@ -35,6 +35,7 @@ class WithdrawalsController {
           unit_value_snapshot: material.unit_value,
           total_value: material.unit_value * quantity,
           technician_id: technician.id,
+          notes: notes || null,
         },
         { client: trx }
       )

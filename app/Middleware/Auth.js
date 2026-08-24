@@ -27,7 +27,7 @@ class Auth {
       return ctx.response.status(401).json({ message: 'Sessão inválida ou expirada.' })
     }
 
-    const user = await User.query().where('id', userId).preload('roles').first()
+    const user = await User.query().where('id', userId).preload('roles').preload('sector').first()
     if (!user || user.banned || user.status !== 'ativo') {
       return ctx.response.status(401).json({ message: 'Usuário inativo ou bloqueado.' })
     }

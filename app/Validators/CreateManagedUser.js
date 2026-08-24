@@ -20,6 +20,7 @@ class CreateManagedUser {
     turno: schema.enum.optional(['manha', 'tarde', 'noite']),
     cargo: schema.string.optional({ trim: true }),
     matricula: schema.string.optional({ trim: true }),
+    status: schema.enum.optional(['ativo', 'inativo']),
   })
 
   messages = {
