@@ -27,9 +27,9 @@ const globalMiddleware = [
 ]
 
 const namedMiddleware = {
-  // Exemplo: quando o pacote @adonisjs/auth estiver instalado, você
-  // pode ativar autenticação numa rota com router.middleware(['auth']).
-  // auth: 'Adonis/Middleware/Auth',
+  auth: 'App/Middleware/Auth',
+  techAuth: 'App/Middleware/TechAuth',
+  anyAuth: 'App/Middleware/AnyAuth',
 }
 
 Server.middleware.register(globalMiddleware)

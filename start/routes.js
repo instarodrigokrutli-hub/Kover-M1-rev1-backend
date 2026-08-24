@@ -5,51 +5,92 @@
 | start/routes.js
 |--------------------------------------------------------------------------
 |
-| Aqui ficam TODAS as rotas da API: qual URL + verbo HTTP chama qual
-| método de qual controller. É o "mapa" da aplicação — quando você
-| quiser saber "o que existe nessa API", comece por aqui.
-|
-| O controller é referenciado como STRING ('TecnicosController.index').
-| O Adonis só importa o arquivo de fato quando a rota é chamada
-| (lazy loading) — por isso o app sobe mais rápido.
+| Todas as rotas da API — Fase 1 da migração do Kover Manutenção.
 |
 */
 
 const Route = use('Adonis/Core/Route')
 
-// Rota simples, só pra confirmar que a API está no ar.
 Route.get('/', async () => {
   return { status: 'ok', app: 'kover-manutencao-backend' }
 })
 
-/*
-|--------------------------------------------------------------------------
-| Grupo /api/v1
-|--------------------------------------------------------------------------
-|
-| Route.group agrupa rotas que compartilham um prefixo (e, se quiser,
-| um middleware). Todo módulo novo (Máquinas, Materiais, Preventivas...)
-| entra aqui dentro, seguindo o mesmo padrão dos dois exemplos abaixo.
-|
-*/
 Route.group(() => {
-  // ---- Técnicos -----------------------------------------------------
-  // Route.resource cria automaticamente as 7 rotas RESTful padrão:
-  //   GET    /tecnicos          -> index   (listar)
-  //   POST   /tecnicos          -> store   (criar)
-  //   GET    /tecnicos/:id      -> show    (mostrar 1)
-  //   PUT    /tecnicos/:id      -> update  (atualizar)
-  //   DELETE /tecnicos/:id      -> destroy (remover)
-  // .apiOnly() remove as rotas "create" e "edit" (que só fazem sentido
-  // pra formulário HTML server-side, não pra uma API JSON).
-  Route.resource('tecnicos', 'TecnicosController').apiOnly()
+  // ---- Auth (admin/coordenador/produção) -----------------------------
+  Route.post('auth/login', 'AuthController.login')
+  Route.post('auth/claim-first-admin', 'AuthController.claimFirstAdmin')
+  Route.get('auth/me', 'AuthController.me').middleware(['auth'])
 
-  // ---- Ordens de Serviço ---------------------------------------------
-  Route.resource('ordens-servico', 'OrdensServicoController').apiOnly()
+  // ---- Usuários (admin-only) ------------------------------------------
+  Route.get('users', 'UsersController.index').middleware(['auth'])
+  Route.post('users', 'UsersController.store').middleware(['auth'])
+  Route.put('users/:id', 'UsersController.update').middleware(['auth'])
+  Route.patch('users/:id/role', 'UsersController.setRole').middleware(['auth'])
 
-  // Exemplo de rota "extra", fora do CRUD padrão, presa a um recurso:
+  // ---- Auth de técnico (sessão por cookie) ----------------------------
+  Route.get('tech/technicians', 'TechAuthController.listActive')
+  Route.post('tech/login', 'TechAuthController.login')
+  Route.post('tech/logout', 'TechAuthController.logout').middleware(['techAuth'])
+  Route.get('tech/me', 'TechAuthController.me').middleware(['techAuth'])
+
+  // ---- Técnicos (CRUD admin) -------------------------------------------
+  Route.resource('technicians', 'TechniciansController').apiOnly().middleware({
+    '*': ['auth'],
+  })
+
+  // ---- Máquinas ---------------------------------------------------------
+  Route.resource('machines', 'MachinesController').apiOnly().middleware({
+    '*': ['auth'],
+  })
+
+  // ---- Categorias ---------------------------------------------------------
+  Route.resource('categories', 'CategoriesController').apiOnly().middleware({
+    '*': ['auth'],
+  })
+
+  // ---- Setores ---------------------------------------------------------
+  Route.resource('sectors', 'SectorsController').apiOnly().middleware({
+    '*': ['auth'],
+  })
+
+  // ---- Materiais / Estoque ----------------------------------------------
+  // index/show: lidos tanto por usuários quanto por técnicos (anyAuth);
+  // store/update/destroy exigem admin (checado dentro do controller).
+  Route.resource('materials', 'MaterialsController').apiOnly().middleware({
+    index: ['anyAuth'],
+    show: ['anyAuth'],
+    store: ['auth'],
+    update: ['auth'],
+    destroy: ['auth'],
+  })
+  Route.post('materials/bulk-import', 'MaterialsController.bulkImport').middleware(['auth'])
+  Route.post('stock/adjust', 'StockController.adjust').middleware(['auth'])
+  Route.get('stock/movements', 'StockController.index').middleware(['auth'])
+
+  Route.post('withdrawals', 'WithdrawalsController.store').middleware(['techAuth'])
+  Route.get('withdrawals/mine', 'WithdrawalsController.mine').middleware(['techAuth'])
+
+  // ---- Ordens de Serviço (externas) --------------------------------------
+  Route.resource('work-orders', 'WorkOrdersController').apiOnly().middleware({
+    '*': ['auth'],
+  })
+  Route.patch('work-orders/:id/evaluate', 'WorkOrdersController.evaluate').middleware(['auth'])
+
+  Route.patch('work-orders/:id/accept', 'WorkOrdersTechController.accept').middleware(['techAuth'])
+  Route.patch('work-orders/:id/take-over', 'WorkOrdersTechController.takeOver').middleware(['techAuth'])
+  Route.post('work-orders/:id/comments', 'WorkOrdersTechController.addComment').middleware(['techAuth'])
+  Route.patch('work-orders/:id/execution', 'WorkOrdersTechController.updateExecution').middleware(['techAuth'])
+  Route.post('work-orders/:id/materials', 'WorkOrdersTechController.addMaterial').middleware(['techAuth'])
+  Route.patch('work-orders/:id/finish', 'WorkOrdersTechController.finish').middleware(['techAuth'])
+  Route.patch('work-orders/:id/pause', 'WorkOrdersTechController.pause').middleware(['techAuth'])
+  Route.patch('work-orders/:id/resume', 'WorkOrdersTechController.resume').middleware(['techAuth'])
   Route.patch(
-    'ordens-servico/:id/concluir',
-    'OrdensServicoController.concluir'
-  )
+    'work-orders/:id/checklist/:itemId',
+    'WorkOrdersTechController.updateChecklistItem'
+  ).middleware(['techAuth'])
+
+  // ---- Ordens de Serviço Internas ----------------------------------------
+  Route.resource('internal-work-orders', 'InternalWorkOrdersController')
+    .apiOnly()
+    .middleware({ '*': ['techAuth'] })
 }).prefix('api/v1')

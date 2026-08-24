@@ -8,7 +8,9 @@
   "providers": [
     "./providers/AppProvider",
     "@adonisjs/core",
-    "@adonisjs/lucid"
+    "@adonisjs/lucid",
+    "@adonisjs/hash",
+    "@adonisjs/validator"
   ],
 
   "aceProviders": ["@adonisjs/repl"],

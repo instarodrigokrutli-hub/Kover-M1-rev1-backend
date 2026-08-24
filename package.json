@@ -6,7 +6,7 @@
   "main": "server.js",
   "scripts": {
     "postinstall": "node ace generate:manifest",
-    "dev": "node --watch server.js",
+    "dev": "node dev-watch.js",
     "start": "node server.js",
     "migration:run": "node ace migration:run",
     "migration:rollback": "node ace migration:rollback",
@@ -15,10 +15,14 @@
   },
   "dependencies": {
     "@adonisjs/core": "^5.9.0",
+    "@adonisjs/hash": "^7.2.2",
     "@adonisjs/lucid": "^18.4.0",
     "@adonisjs/repl": "^3.1.11",
+    "@adonisjs/validator": "^12.4.1",
+    "jsonwebtoken": "^9.0.3",
     "luxon": "^3.4.4",
     "pg": "^8.11.5",
+    "phc-bcrypt": "^2.0.0",
     "proxy-addr": "^2.0.7",
     "reflect-metadata": "^0.2.1",
     "source-map-support": "^0.5.21",
@@ -26,6 +30,7 @@
   },
   "devDependencies": {
     "@adonisjs/assembler": "^5.9.5",
+    "chokidar": "^5.0.0",
     "pino-pretty": "^10.3.1"
   },
   "allowScripts": {
