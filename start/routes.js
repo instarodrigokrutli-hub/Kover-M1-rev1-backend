@@ -21,6 +21,7 @@ Route.group(() => {
   Route.post('auth/claim-first-admin', 'AuthController.claimFirstAdmin')
   Route.get('auth/me', 'AuthController.me').middleware(['auth'])
   Route.patch('auth/password', 'AuthController.changePassword').middleware(['auth'])
+  Route.patch('auth/turno', 'AuthController.updateMyTurno').middleware(['auth'])
 
   // ---- Usuários (admin-only) ------------------------------------------
   Route.get('users', 'UsersController.index').middleware(['auth'])
@@ -78,6 +79,9 @@ Route.group(() => {
   Route.post('materials/search-similar', 'MaterialsController.searchSimilar').middleware(['auth'])
   Route.post('stock/adjust', 'StockController.adjust').middleware(['auth'])
   Route.get('stock/movements', 'StockController.index').middleware(['auth'])
+
+  // ---- Auditoria (histórico geral de ações) ------------------------------
+  Route.get('audit-logs', 'AuditLogsController.index').middleware(['auth'])
 
   Route.post('withdrawals', 'WithdrawalsController.store').middleware(['techAuth'])
   Route.get('withdrawals/mine', 'WithdrawalsController.mine').middleware(['techAuth'])

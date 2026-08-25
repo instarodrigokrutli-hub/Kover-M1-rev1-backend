@@ -11,7 +11,7 @@ const EvaluateWorkOrder = require('../../Validators/EvaluateWorkOrder')
 class WorkOrdersController {
   // GET /work-orders — status aceita lista separada por vírgula (ex.: "aceita,em_atendimento,pausada").
   async index({ request }) {
-    const { page = 1, perPage = 20, status, requester_user_id } = request.qs()
+    const { page = 1, perPage = 20, status, requester_user_id, from, to } = request.qs()
 
     const query = WorkOrder.query().preload('machine').preload('technician').orderBy('created_at', 'desc')
     if (status) {
@@ -20,6 +20,8 @@ class WorkOrdersController {
       else if (statuses.length === 1) query.where('status', statuses[0])
     }
     if (requester_user_id) query.where('requester_user_id', requester_user_id)
+    if (from) query.where('opened_at', '>=', `${from} 00:00:00`)
+    if (to) query.where('opened_at', '<=', `${to} 23:59:59`)
 
     return query.paginate(page, perPage)
   }
@@ -28,6 +30,11 @@ class WorkOrdersController {
   async store(ctx) {
     const { request, response, user } = ctx
     const data = await request.validate(CreateWorkOrder)
+
+    // 5x2 comercial não tem turno (horário comercial fixo); 3x3 e 6x1 exigem.
+    if (data.escala !== '5x2' && !data.turno) {
+      return response.status(422).json({ message: 'Informe o turno.' })
+    }
 
     const pending = await WorkOrder.query()
       .where('requester_user_id', user.id)
@@ -57,7 +64,8 @@ class WorkOrdersController {
       requester_name: user.full_name,
       requester_sector_id: user.sector_id,
       requester_sector_name: requesterSector ? requesterSector.name : null,
-      requester_turno: user.turno,
+      requester_turno: data.turno || null,
+      requester_escala: data.escala,
       machine_id: machine.id,
       machine_code: machine.code,
       machine_name: machine.name,

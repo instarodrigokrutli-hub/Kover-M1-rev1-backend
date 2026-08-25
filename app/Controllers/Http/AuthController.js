@@ -7,15 +7,17 @@ const Jwt = require('../../Services/Jwt')
 const AuditLogger = require('../../Services/AuditLogger')
 const LoginUser = require('../../Validators/LoginUser')
 const ChangePassword = require('../../Validators/ChangePassword')
+const UpdateMyTurno = require('../../Validators/UpdateMyTurno')
 
 class AuthController {
   // POST /auth/login
   async login({ request, response }) {
     const { identifier, password } = await request.validate(LoginUser)
 
+    const normalized = identifier.trim().toLowerCase()
     const user = await User.query()
-      .where('email', identifier)
-      .orWhere('username', identifier)
+      .whereRaw('lower(email) = ?', [normalized])
+      .orWhereRaw('lower(username) = ?', [normalized])
       .preload('roles')
       .first()
 
@@ -90,6 +92,18 @@ class AuthController {
     await AuditLogger.log({ user, request }, { action: 'PASSWORD_CHANGED', entityType: 'users', entityId: user.id })
 
     return response.json({ ok: true })
+  }
+
+  // PATCH /auth/turno — o próprio usuário de produção define/atualiza seu
+  // turno (troca com frequência, por isso não é fixado na criação da conta).
+  async updateMyTurno({ request, response, user }) {
+    const { turno } = await request.validate(UpdateMyTurno)
+    user.turno = turno
+    await user.save()
+
+    await AuditLogger.log({ user, request }, { action: 'TURNO_UPDATED', entityType: 'users', entityId: user.id, details: { turno } })
+
+    return response.json({ ok: true, turno })
   }
 }
 

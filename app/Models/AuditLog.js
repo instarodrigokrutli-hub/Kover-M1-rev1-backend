@@ -20,6 +20,15 @@ class AuditLog extends BaseModel {
       prepare: (value) => (value ? JSON.stringify(value) : value),
     })
     this.$addColumn('created_at', dateTimeColumn({ autoCreate: true }))
+
+    this.$addRelation('actorUser', 'belongsTo', () => require('./User'), {
+      localKey: 'id',
+      foreignKey: 'actor_user_id',
+    })
+    this.$addRelation('actorTechnician', 'belongsTo', () => require('./Technician'), {
+      localKey: 'id',
+      foreignKey: 'actor_technician_id',
+    })
   }
 }
 

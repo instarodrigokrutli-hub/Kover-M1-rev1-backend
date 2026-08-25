@@ -13,6 +13,7 @@ class WorkOrder extends BaseModel {
     this.$addColumn('requester_sector_id', {})
     this.$addColumn('requester_sector_name', {})
     this.$addColumn('requester_turno', {})
+    this.$addColumn('requester_escala', {})
     this.$addColumn('machine_id', {})
     this.$addColumn('machine_code', {})
     this.$addColumn('machine_name', {})

@@ -26,10 +26,12 @@ class UsersController {
 
     let email = data.email
     if (data.role === 'producao') {
-      if (!data.username || !data.sector_id || !data.turno) {
+      // turno não é exigido na criação — o próprio operador define/atualiza o
+      // turno depois (troca com frequência, ver PATCH /auth/turno).
+      if (!data.username || !data.sector_id) {
         return response
           .status(422)
-          .json({ message: 'Produção exige username, sector_id e turno.' })
+          .json({ message: 'Produção exige username e sector_id.' })
       }
       email = `${data.username}@${PRODUCAO_EMAIL_DOMAIN}`
     } else if (!data.email || !data.password) {
