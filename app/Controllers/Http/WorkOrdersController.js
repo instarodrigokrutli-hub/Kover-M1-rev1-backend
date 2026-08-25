@@ -71,6 +71,7 @@ class WorkOrdersController {
       machine_name: machine.name,
       machine_sector: machine.sector,
       priority,
+      original_priority: priority,
       description: data.description,
       status: 'aguardando_atendimento',
       opened_at: DateTime.local(),

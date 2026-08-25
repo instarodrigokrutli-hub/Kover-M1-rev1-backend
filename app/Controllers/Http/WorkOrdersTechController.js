@@ -15,6 +15,7 @@ const AddWorkOrderMaterial = require('../../Validators/AddWorkOrderMaterial')
 const FinishWorkOrder = require('../../Validators/FinishWorkOrder')
 
 const WORKING_STATUSES = ['aceita', 'em_atendimento', 'pausada']
+const WO_PRIORITIES = ['baixa', 'media', 'alta', 'emergencial']
 
 async function trackParticipant(workOrder, technician) {
   const now = DateTime.local()
@@ -121,7 +122,7 @@ class WorkOrdersTechController {
   // PATCH /work-orders/:id/execution
   async updateExecution(ctx) {
     const { params, request, response, technician } = ctx
-    const { service_type, comment } = request.only(['service_type', 'comment'])
+    const { service_type, comment, priority } = request.only(['service_type', 'comment', 'priority'])
 
     const workOrder = await WorkOrder.find(params.id)
     if (!workOrder) return response.status(404).json({ message: 'OS não encontrada.' })
@@ -131,6 +132,21 @@ class WorkOrdersTechController {
 
     if (service_type) workOrder.service_type = service_type
     if (comment) workOrder.technician_comment = comment
+    if (priority) {
+      if (!WO_PRIORITIES.includes(priority)) {
+        return response.status(422).json({ message: 'Prioridade inválida.' })
+      }
+      if (priority !== workOrder.priority) {
+        const previousPriority = workOrder.priority
+        workOrder.priority = priority
+        await AuditLogger.log(ctx, {
+          action: 'WO_PRIORITY_RECLASSIFIED',
+          entityType: 'work_orders',
+          entityId: workOrder.id,
+          details: { from: previousPriority, to: priority },
+        })
+      }
+    }
     if (!workOrder.started_at) workOrder.started_at = DateTime.local()
     if (workOrder.status === 'aceita') workOrder.status = 'em_atendimento'
     await workOrder.save()
@@ -208,7 +224,7 @@ class WorkOrdersTechController {
   // PATCH /work-orders/:id/finish
   async finish(ctx) {
     const { params, request, response, technician } = ctx
-    const { service_type, final_comment } = await request.validate(FinishWorkOrder)
+    const { service_type, final_comment, corrective_classification } = await request.validate(FinishWorkOrder)
 
     const workOrder = await WorkOrder.find(params.id)
     if (!workOrder) return response.status(404).json({ message: 'OS não encontrada.' })
@@ -221,6 +237,7 @@ class WorkOrdersTechController {
     workOrder.technician_id = technician.id
     if (service_type) workOrder.service_type = service_type
     if (final_comment) workOrder.final_comment = final_comment
+    workOrder.corrective_classification = corrective_classification
     await workOrder.save()
 
     await trackParticipant(workOrder, technician)
