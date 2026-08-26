@@ -31,4 +31,7 @@ jobs:
       - name: Generate app key
         run: node ace generate:key
 
+      - name: Run migrations
+        run: node ace migration:run
+
       # Deploy step: preencher quando o ambiente/hospedagem for definido.
