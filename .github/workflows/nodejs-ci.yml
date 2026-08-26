@@ -29,7 +29,9 @@ jobs:
         run: cp .env.example .env
 
       - name: Generate app key
-        run: node ace generate:key
+        run: |
+          KEY=$(node ace generate:key | head -n 1 | sed -e 's/\x1b\[[0-9;]*m//g')
+          sed -i "s|^APP_KEY=.*|APP_KEY=$KEY|" .env
 
       - name: Run migrations
         run: node ace migration:run
