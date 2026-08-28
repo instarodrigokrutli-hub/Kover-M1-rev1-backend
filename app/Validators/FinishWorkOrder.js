@@ -14,13 +14,13 @@ class FinishWorkOrder {
     ]),
     final_comment: schema.string.optional({ trim: true }),
     // Classificação Corretiva x Corretiva Programada — decidida só pelo
-    // técnico, obrigatória ao concluir (alimenta o indicador de OS).
-    corrective_classification: schema.enum(['corretiva', 'corretiva_programada']),
+    // técnico, obrigatória ao concluir uma OS corretiva (alimenta o
+    // indicador de OS). Não se aplica a preventivas — a obrigatoriedade é
+    // reforçada no controller, que conhece o maintenance_type da OS.
+    corrective_classification: schema.enum.optional(['corretiva', 'corretiva_programada']),
   })
 
-  messages = {
-    'corrective_classification.required': 'Classifique a OS como Corretiva ou Corretiva Programada.',
-  }
+  messages = {}
 }
 
 module.exports = FinishWorkOrder

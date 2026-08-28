@@ -17,7 +17,7 @@ const chokidar = require('chokidar')
 const { spawn } = require('child_process')
 const path = require('path')
 
-const WATCH_PATHS = ['app', 'config', 'start', 'providers', 'database', '.env']
+const WATCH_PATHS = ['app', 'config', 'start', 'providers', 'database/migrations', '.env']
 
 let child = null
 let restarting = false

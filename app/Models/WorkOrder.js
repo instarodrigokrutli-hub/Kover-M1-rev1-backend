@@ -47,6 +47,7 @@ class WorkOrder extends BaseModel {
     this.$addColumn('validated_at', dateTimeColumn())
     this.$addColumn('validated_by', {})
     this.$addColumn('validation_comment', {})
+    this.$addColumn('plan_id', {})
     this.$addColumn('created_at', dateTimeColumn({ autoCreate: true, autoUpdate: true }))
     this.$addColumn('updated_at', dateTimeColumn({ autoUpdate: true }))
 
@@ -75,6 +76,14 @@ class WorkOrder extends BaseModel {
       foreignKey: 'work_order_id',
     })
     this.$addRelation('pauses', 'hasMany', () => require('./WorkOrderPause'), {
+      localKey: 'id',
+      foreignKey: 'work_order_id',
+    })
+    this.$addRelation('plan', 'belongsTo', () => require('./MaintenancePlan'), {
+      localKey: 'id',
+      foreignKey: 'plan_id',
+    })
+    this.$addRelation('checklistItems', 'hasMany', () => require('./WorkOrderChecklistItem'), {
       localKey: 'id',
       foreignKey: 'work_order_id',
     })

@@ -10,9 +10,12 @@ const WorkOrderPause = require('../../Models/WorkOrderPause')
 const WorkOrderMaterial = require('../../Models/WorkOrderMaterial')
 const Material = require('../../Models/Material')
 const StockMovement = require('../../Models/StockMovement')
+const WorkOrderChecklistItem = require('../../Models/WorkOrderChecklistItem')
 const AuditLogger = require('../../Services/AuditLogger')
 const AddWorkOrderMaterial = require('../../Validators/AddWorkOrderMaterial')
 const FinishWorkOrder = require('../../Validators/FinishWorkOrder')
+
+const CHECKLIST_STATUSES = ['nao_iniciado', 'em_andamento', 'concluido', 'nao_se_aplica']
 
 const WORKING_STATUSES = ['aceita', 'em_atendimento', 'pausada']
 const WO_PRIORITIES = ['baixa', 'media', 'alta', 'emergencial']
@@ -232,6 +235,19 @@ class WorkOrdersTechController {
       return response.status(422).json({ message: 'OS precisa estar em atendimento.' })
     }
 
+    if (workOrder.maintenance_type === 'preventiva') {
+      const pending = await WorkOrderChecklistItem.query()
+        .where('work_order_id', workOrder.id)
+        .where('required', true)
+        .whereNotIn('status', ['concluido', 'nao_se_aplica'])
+        .first()
+      if (pending) {
+        return response.status(422).json({ message: 'Há itens obrigatórios do checklist ainda pendentes.' })
+      }
+    } else if (!corrective_classification) {
+      return response.status(422).json({ message: 'Classifique a OS como Corretiva ou Corretiva Programada.' })
+    }
+
     workOrder.status = 'aguardando_avaliacao'
     workOrder.finished_at = DateTime.local()
     workOrder.technician_id = technician.id
@@ -307,11 +323,37 @@ class WorkOrdersTechController {
     return workOrder
   }
 
-  // PATCH /work-orders/:id/checklist/:itemId — checklist de preventivas
-  // fica para uma fase seguinte (maintenance_plan_items fora do escopo
-  // da Fase 1); mantemos a rota respondendo 501 até lá.
-  async updateChecklistItem({ response }) {
-    return response.status(501).json({ message: 'Checklist de preventivas ainda não implementado.' })
+  // PATCH /work-orders/:id/checklist/:itemId
+  async updateChecklistItem(ctx) {
+    const { params, request, response, technician } = ctx
+    const { status } = request.only(['status'])
+    if (!CHECKLIST_STATUSES.includes(status)) {
+      return response.status(422).json({ message: 'Status de checklist inválido.' })
+    }
+
+    const item = await WorkOrderChecklistItem.query()
+      .where('id', params.itemId)
+      .where('work_order_id', params.id)
+      .first()
+    if (!item) return response.status(404).json({ message: 'Item do checklist não encontrado.' })
+
+    const workOrder = await WorkOrder.find(params.id)
+    if (!workOrder || !WORKING_STATUSES.includes(workOrder.status)) {
+      return response.status(422).json({ message: 'OS não está em atendimento.' })
+    }
+
+    item.status = status
+    item.technician_id = technician.id
+    item.technician_name = technician.name
+    await item.save()
+
+    await trackParticipant(workOrder, technician)
+    await logEvent(workOrder, technician, 'checklist', `${technician.name} atualizou o item "${item.description}" do checklist.`, {
+      itemId: item.id,
+      status,
+    })
+
+    return item
   }
 }
 

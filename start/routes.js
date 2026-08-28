@@ -83,8 +83,98 @@ Route.group(() => {
   // ---- Auditoria (histórico geral de ações) ------------------------------
   Route.get('audit-logs', 'AuditLogsController.index').middleware(['auth'])
 
+  // ---- Indicadores / Ativos (Fase 2 — leitura, sem tabela nova) ----------
+  Route.post('indicators', 'IndicatorsController.index').middleware(['auth'])
+  Route.get('indicators/filter-options', 'IndicatorsController.filterOptions').middleware(['auth'])
+  Route.get('assets', 'AssetsController.index').middleware(['auth'])
+  Route.get('assets/:id', 'AssetsController.show').middleware(['auth'])
+
   Route.post('withdrawals', 'WithdrawalsController.store').middleware(['techAuth'])
   Route.get('withdrawals/mine', 'WithdrawalsController.mine').middleware(['techAuth'])
+
+  // ---- Atividades do técnico (Fase 2 — migrado do Supabase) --------------
+  // mine/sectors precisam vir ANTES de tech-activities/:id — senão o GET
+  // desses caía no show (mesmo problema documentado em materials/generate-code).
+  Route.post('tech-activities', 'TechActivitiesController.store').middleware(['techAuth'])
+  Route.post('tech-activities/route', 'TechActivitiesController.storeRoute').middleware(['techAuth'])
+  Route.get('tech-activities/mine', 'TechActivitiesController.mine').middleware(['techAuth'])
+  Route.get('tech-activities/sectors', 'TechActivitiesController.sectors').middleware(['auth'])
+  Route.get('tech-activities', 'TechActivitiesController.index').middleware(['auth'])
+  Route.get('tech-activities/:id', 'TechActivitiesController.show').middleware(['auth'])
+
+  // ---- Compras (Fase 2 — migrado do Supabase) ----------------------------
+  // Unidades
+  Route.get('units', 'UnitsController.index').middleware(['anyAuth'])
+  Route.post('units', 'UnitsController.store').middleware(['auth'])
+  Route.put('units/:code', 'UnitsController.update').middleware(['auth'])
+
+  // Fornecedores — select precisa vir antes de :id
+  Route.get('suppliers/select', 'SuppliersController.forSelect').middleware(['auth'])
+  Route.get('suppliers', 'SuppliersController.index').middleware(['auth'])
+  Route.post('suppliers', 'SuppliersController.store').middleware(['auth'])
+  Route.put('suppliers/:id', 'SuppliersController.update').middleware(['auth'])
+  Route.post('suppliers/bulk-import', 'SuppliersController.bulkImport').middleware(['auth'])
+  Route.get('suppliers/:id/history', 'StockReceiptsController.supplierHistory').middleware(['auth'])
+
+  Route.get('materials/:id/acquisitions', 'SuppliersController.materialAcquisitions').middleware(['auth'])
+  Route.get('materials/:id/timeline', 'StockReceiptsController.materialTimeline').middleware(['auth'])
+
+  // Solicitações de compra — mine antes de :id
+  Route.post('purchase-requests', 'PurchaseRequestsController.store').middleware(['auth'])
+  Route.post('purchase-requests/tech', 'PurchaseRequestsController.storeTech').middleware(['techAuth'])
+  Route.get('purchase-requests/mine', 'PurchaseRequestsController.mine').middleware(['techAuth'])
+  Route.get('purchase-requests', 'PurchaseRequestsController.index').middleware(['auth'])
+  Route.patch('purchase-requests/:id/approve', 'PurchaseRequestsController.approve').middleware(['auth'])
+  Route.patch('purchase-requests/:id/reject', 'PurchaseRequestsController.reject').middleware(['auth'])
+
+  // Materiais pendentes (não cadastrados) — mine antes de :id
+  Route.post('pending-materials', 'PendingMaterialsController.store').middleware(['techAuth'])
+  Route.get('pending-materials/mine', 'PendingMaterialsController.mine').middleware(['techAuth'])
+  Route.get('pending-materials', 'PendingMaterialsController.index').middleware(['auth'])
+  Route.post('pending-materials/:id/approve', 'PendingMaterialsController.approve').middleware(['auth'])
+  Route.post('pending-materials/:id/reject', 'PendingMaterialsController.reject').middleware(['auth'])
+
+  // Inventário inicial + recebimentos
+  Route.get('inventory/status', 'StockReceiptsController.getInventoryStatus').middleware(['auth'])
+  Route.post('inventory/finalize', 'StockReceiptsController.finalizeInventory').middleware(['auth'])
+  Route.post('inventory/reopen', 'StockReceiptsController.reopenInventory').middleware(['auth'])
+  Route.post('inventory/entries', 'StockReceiptsController.registerInitialEntry').middleware(['auth'])
+  Route.get('receipts', 'StockReceiptsController.index').middleware(['auth'])
+  Route.post('receipts', 'StockReceiptsController.store').middleware(['auth'])
+  Route.get('receipts/:id', 'StockReceiptsController.show').middleware(['auth'])
+
+  // ---- Preventivas (Fase 2 — migrado do Supabase) ------------------------
+  Route.get('maintenance-plans', 'PreventiveController.index').middleware(['auth'])
+  Route.post('maintenance-plans', 'PreventiveController.store').middleware(['auth'])
+  Route.get('maintenance-plans/:id', 'PreventiveController.show').middleware(['auth'])
+  Route.put('maintenance-plans/:id', 'PreventiveController.update').middleware(['auth'])
+  Route.delete('maintenance-plans/:id', 'PreventiveController.destroy').middleware(['auth'])
+
+  Route.post('maintenance-plan-items', 'PreventiveController.saveItem').middleware(['auth'])
+  Route.post('maintenance-plan-items/reorder', 'PreventiveController.reorderItems').middleware(['auth'])
+  Route.delete('maintenance-plan-items/:id', 'PreventiveController.deleteItem').middleware(['auth'])
+
+  Route.post('preventives/generate', 'PreventiveController.generate').middleware(['auth'])
+  Route.get('preventives/overview', 'PreventiveController.overview').middleware(['auth'])
+  Route.get('preventives/indicators', 'PreventiveController.indicators').middleware(['auth'])
+  Route.get('preventives', 'PreventiveController.list').middleware(['auth'])
+  Route.get('preventives/:id', 'PreventiveController.show2').middleware(['auth'])
+  Route.post('preventives/:id/validate', 'PreventiveController.validate').middleware(['auth'])
+  Route.post('preventives/:id/cancel', 'PreventiveController.cancel').middleware(['auth'])
+
+  // ---- Notificações + Push (Fase 2 — migrado do Supabase) ----------------
+  Route.post('notifications/list', 'NotificationsController.index').middleware(['auth'])
+  Route.get('notifications/unread-count', 'NotificationsController.unreadCount').middleware(['auth'])
+  Route.patch('notifications/read-all', 'NotificationsController.markAllRead').middleware(['auth'])
+  Route.patch('notifications/:id/read', 'NotificationsController.markRead').middleware(['auth'])
+  Route.post('notifications/sync-overdue-preventives', 'NotificationsController.syncOverduePreventives').middleware(['auth'])
+
+  Route.get('notification-settings', 'NotificationSettingsController.index').middleware(['auth'])
+  Route.post('notification-settings', 'NotificationSettingsController.save').middleware(['auth'])
+
+  Route.post('push-devices', 'PushDevicesController.store')
+  Route.post('push-devices/disable', 'PushDevicesController.disable')
+  Route.get('push-devices/test-service-account', 'PushDevicesController.testServiceAccount')
 
   // ---- Ordens de Serviço (externas) --------------------------------------
   // index/show: lidos tanto por produção/PCM (JWT) quanto por técnicos

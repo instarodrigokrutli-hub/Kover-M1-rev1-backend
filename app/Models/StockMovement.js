@@ -21,6 +21,8 @@ class StockMovement extends BaseModel {
     this.$addColumn('justification', {})
     this.$addColumn('internal_wo_id', {})
     this.$addColumn('work_order_id', {})
+    this.$addColumn('supplier_id', {})
+    this.$addColumn('receipt_id', {})
     this.$addColumn('created_at', dateTimeColumn({ autoCreate: true }))
 
     this.$addRelation('material', 'belongsTo', () => require('./Material'), {
@@ -30,6 +32,14 @@ class StockMovement extends BaseModel {
     this.$addRelation('technician', 'belongsTo', () => require('./Technician'), {
       localKey: 'id',
       foreignKey: 'technician_id',
+    })
+    this.$addRelation('supplier', 'belongsTo', () => require('./Supplier'), {
+      localKey: 'id',
+      foreignKey: 'supplier_id',
+    })
+    this.$addRelation('performedByUser', 'belongsTo', () => require('./User'), {
+      localKey: 'id',
+      foreignKey: 'performed_by_user',
     })
   }
 }

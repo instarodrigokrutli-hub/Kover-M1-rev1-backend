@@ -100,6 +100,7 @@ class WorkOrdersController {
       .preload('events')
       .preload('participants')
       .preload('pauses', (q) => q.preload('technician'))
+      .preload('checklistItems')
       .first()
 
     if (!workOrder) return response.status(404).json({ message: 'OS não encontrada.' })
