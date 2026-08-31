@@ -34,8 +34,10 @@ class UsersController {
           .json({ message: 'Produção exige username e sector_id.' })
       }
       email = `${data.username}@${PRODUCAO_EMAIL_DOMAIN}`
-    } else if (!data.email || !data.password) {
-      return response.status(422).json({ message: 'admin/coordenador exigem email e password.' })
+    } else if (!data.password) {
+      return response.status(422).json({ message: 'Senha é obrigatória.' })
+    } else if (!data.email && !data.username) {
+      return response.status(422).json({ message: 'Informe e-mail ou usuário.' })
     }
 
     const passwordHash = await Hash.make(data.password || Math.random().toString(36).slice(2))
