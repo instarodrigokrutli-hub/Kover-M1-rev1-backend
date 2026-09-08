@@ -210,3 +210,10 @@ Route.group(() => {
     .apiOnly()
     .middleware({ '*': ['techAuth'] })
 }).prefix('api/v1')
+
+// ---- Frontend (proxy interno) -----------------------------------------
+// Tudo que não é "/" nem "/api/v1/*" é repassado para o processo do
+// frontend (localhost:3503 por padrão — ver ProxyController). Assim o
+// site inteiro (frontend + API) fica disponível numa porta só, sem
+// precisar de nenhum proxy externo configurado à parte.
+Route.any('*', 'ProxyController.forward')
