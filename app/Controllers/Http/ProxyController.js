@@ -5,8 +5,9 @@
 | app/Controllers/Http/ProxyController.js
 |--------------------------------------------------------------------------
 |
-| Repassa (proxy) qualquer requisição que não seja "/" nem "/api/v1/*" para
-| o frontend, que roda como um processo Node separado em localhost:3503
+| Repassa (proxy) qualquer requisição que não seja "/api/v1/*" para o
+| frontend (incluindo "/", a home), que roda como um processo Node separado
+| em localhost:3503
 | (variável FRONTEND_URL). Existe para que, de fora, tudo (site + API)
 | pareça uma coisa só numa porta só (a mesma que já expõe a API hoje) —
 | sem precisar de nenhuma configuração de proxy externo (IIS ou outro).

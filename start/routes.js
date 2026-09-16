@@ -11,11 +11,17 @@
 
 const Route = use('Adonis/Core/Route')
 
-Route.get('/', async () => {
-  return { status: 'ok', app: 'kover-manutencao-backend' }
-})
-
+// IMPORTANTE: nenhuma rota deve ficar fora deste grupo (prefixo /api/v1).
+// Qualquer rota registrada "solta" aqui em cima, como "/" ou "/health",
+// roda ANTES do proxy pro frontend (fim do arquivo) e rouba esse caminho
+// dele — foi exatamente isso que aconteceu com "/" até 2026-09-16 (a home
+// de verdade nunca aparecia, só respondia um JSON de health-check). Por
+// isso o health-check mora dentro do grupo agora, sem exceção nenhuma.
 Route.group(() => {
+  Route.get('health', async () => {
+    return { status: 'ok', app: 'kover-manutencao-backend' }
+  })
+
   // ---- Auth (admin/coordenador/produção) -----------------------------
   Route.post('auth/login', 'AuthController.login')
   Route.post('auth/claim-first-admin', 'AuthController.claimFirstAdmin')
@@ -167,10 +173,16 @@ Route.group(() => {
   Route.get('notifications/unread-count', 'NotificationsController.unreadCount').middleware(['auth'])
   Route.patch('notifications/read-all', 'NotificationsController.markAllRead').middleware(['auth'])
   Route.patch('notifications/:id/read', 'NotificationsController.markRead').middleware(['auth'])
+  Route.delete('notifications/:id', 'NotificationsController.destroy').middleware(['auth'])
   Route.post('notifications/sync-overdue-preventives', 'NotificationsController.syncOverduePreventives').middleware(['auth'])
 
   Route.get('notification-settings', 'NotificationSettingsController.index').middleware(['auth'])
   Route.post('notification-settings', 'NotificationSettingsController.save').middleware(['auth'])
+
+  // Preferência pessoal (por usuário) — diferente de notification-settings,
+  // que é por perfil e só o PCM configura.
+  Route.get('notification-preferences/mine', 'UserNotificationPreferencesController.index').middleware(['auth'])
+  Route.post('notification-preferences/mine', 'UserNotificationPreferencesController.save').middleware(['auth'])
 
   Route.post('push-devices', 'PushDevicesController.store')
   Route.post('push-devices/disable', 'PushDevicesController.disable')
@@ -212,8 +224,11 @@ Route.group(() => {
 }).prefix('api/v1')
 
 // ---- Frontend (proxy interno) -----------------------------------------
-// Tudo que não é "/" nem "/api/v1/*" é repassado para o processo do
-// frontend (localhost:3503 por padrão — ver ProxyController). Assim o
-// site inteiro (frontend + API) fica disponível numa porta só, sem
-// precisar de nenhum proxy externo configurado à parte.
+// Tudo que não é "/api/v1/*" é repassado para o processo do frontend
+// (localhost:3503 por padrão — ver ProxyController), incluindo "/" — a
+// home de verdade do site. Assim o site inteiro (frontend + API) fica
+// disponível numa porta só, sem precisar de nenhum proxy externo
+// configurado à parte. Nenhuma rota deve ser registrada fora do grupo
+// /api/v1 acima, ou ela vai roubar esse caminho do frontend em vez de
+// ser repassada (ver comentário no início do grupo).
 Route.any('*', 'ProxyController.forward')
