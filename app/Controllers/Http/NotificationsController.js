@@ -8,10 +8,18 @@
 | Central de Notificações (Fase 2, migrado do Supabase). Réplica fiel de
 | src/lib/notifications.functions.ts.
 |
+| Lido/excluído são POR USUÁRIO (user_notification_states) — antes eram
+| colunas globais em notifications (is_read/read_at/read_by), então a
+| notificação que um Coordenador marcava como lida sumia como não-lida
+| pra todo mundo, e não existia "excluir" nenhum. As colunas antigas
+| continuam na tabela (não usadas) só pra não quebrar a migration.
+|
 */
 
 const { DateTime } = require('luxon')
 const NotificationModel = require('../../Models/Notification')
+const UserNotificationState = require('../../Models/UserNotificationState')
+const UserNotificationPreference = require('../../Models/UserNotificationPreference')
 const WorkOrder = require('../../Models/WorkOrder')
 const { assertRole } = require('../../Services/Authorization')
 const Notify = require('../../Services/Notify')
@@ -20,41 +28,94 @@ function toIso(v) {
   if (!v) return null
   return DateTime.isDateTime(v) ? v.toISO() : String(v)
 }
-function serialize(n) {
+function serialize(n, isRead) {
   return {
     id: n.id, type: n.type, category: n.category, title: n.title, description: n.description,
     event_at: toIso(n.event_at), actor_name: n.actor_name, machine_id: n.machine_id, machine_name: n.machine_name,
     work_order_id: n.work_order_id, work_order_number: n.work_order_number,
-    priority: n.priority, is_read: !!n.is_read, read_at: toIso(n.read_at),
+    priority: n.priority, is_read: isRead, read_at: null,
   }
+}
+
+async function disabledTypesFor(userId) {
+  const rows = await UserNotificationPreference.query().where('user_id', userId).where('ativo', false).select('evento')
+  return rows.map((r) => r.evento)
+}
+
+async function dismissedIdsFor(userId) {
+  const rows = await UserNotificationState.query().where('user_id', userId).where('dismissed', true).select('notification_id')
+  return rows.map((r) => r.notification_id)
+}
+
+async function upsertState(userId, notificationId, changes) {
+  const existing = await UserNotificationState.query()
+    .where('user_id', userId).where('notification_id', notificationId).first()
+  if (existing) {
+    existing.merge(changes)
+    await existing.save()
+    return existing
+  }
+  return UserNotificationState.create({ user_id: userId, notification_id: notificationId, ...changes })
+}
+
+/** Notificações "vivas" pra este usuário: não excluídas, não desativadas na preferência pessoal. */
+async function visibleNotificationsQuery(userId) {
+  const [disabledTypes, dismissedIds] = await Promise.all([
+    disabledTypesFor(userId), dismissedIdsFor(userId),
+  ])
+  const query = NotificationModel.query()
+  if (disabledTypes.length) query.whereNotIn('type', disabledTypes)
+  if (dismissedIds.length) query.whereNotIn('id', dismissedIds)
+  return query
+}
+
+async function computeUnreadCount(userId) {
+  const all = await (await visibleNotificationsQuery(userId)).select('id')
+  const allIds = all.map((n) => n.id)
+  if (allIds.length === 0) return 0
+  const readIds = await UserNotificationState.query()
+    .where('user_id', userId).where('is_read', true).whereIn('notification_id', allIds).select('notification_id')
+  const read = new Set(readIds.map((r) => r.notification_id))
+  return allIds.filter((id) => !read.has(id)).length
 }
 
 class NotificationsController {
   // POST /notifications/list
   async index(ctx) {
     assertRole(ctx, ['admin', 'coordenador'])
-    const { request } = ctx
+    const { request, user } = ctx
     const { category = 'todas', type, priority = 'todas', onlyUnread, from, to, limit = 100 } = request.post()
 
-    const query = NotificationModel.query().orderBy('event_at', 'desc').limit(limit)
+    const query = await visibleNotificationsQuery(user.id)
+    query.orderBy('event_at', 'desc')
     if (category !== 'todas') query.where('category', category)
     if (type) query.where('type', type)
     if (priority !== 'todas') query.where('priority', priority)
-    if (onlyUnread) query.where('is_read', false)
     if (from) query.where('event_at', '>=', `${from} 00:00:00`)
     if (to) query.where('event_at', '<=', `${to} 23:59:59`)
 
-    const rows = await query
-    const unreadRows = await NotificationModel.query().where('is_read', false).select('id')
+    // "onlyUnread" depende do estado por usuário, que só sabemos depois de
+    // buscar — por isso busca um lote maior e filtra/corta em memória.
+    const candidateCap = onlyUnread ? Math.min(Math.max(limit * 5, 200), 1000) : limit
+    const candidates = await query.limit(candidateCap)
+    const candidateIds = candidates.map((n) => n.id)
+    const states = candidateIds.length
+      ? await UserNotificationState.query().where('user_id', user.id).whereIn('notification_id', candidateIds).select('notification_id', 'is_read')
+      : []
+    const readMap = new Map(states.map((s) => [s.notification_id, !!s.is_read]))
 
-    return { rows: rows.map(serialize), unread: unreadRows.length }
+    let rows = candidates.map((n) => serialize(n, readMap.get(n.id) ?? false))
+    if (onlyUnread) rows = rows.filter((r) => !r.is_read)
+    rows = rows.slice(0, limit)
+
+    const unread = await computeUnreadCount(user.id)
+    return { rows, unread }
   }
 
   // GET /notifications/unread-count
   async unreadCount(ctx) {
     assertRole(ctx, ['admin', 'coordenador'])
-    const rows = await NotificationModel.query().where('is_read', false).select('id')
-    return rows.length
+    return computeUnreadCount(ctx.user.id)
   }
 
   // PATCH /notifications/:id/read
@@ -66,10 +127,7 @@ class NotificationsController {
     const n = await NotificationModel.find(params.id)
     if (!n) return response.status(404).json({ message: 'Notificação não encontrada.' })
 
-    n.is_read = read
-    n.read_at = read ? DateTime.local() : null
-    n.read_by = read ? user.id : null
-    await n.save()
+    await upsertState(user.id, n.id, { is_read: read, read_at: read ? DateTime.local() : null })
     return { ok: true }
   }
 
@@ -77,9 +135,23 @@ class NotificationsController {
   async markAllRead(ctx) {
     assertRole(ctx, ['admin', 'coordenador'])
     const { user } = ctx
-    await NotificationModel.query().where('is_read', false).update({
-      is_read: true, read_at: DateTime.local().toSQL({ includeOffset: false }), read_by: user.id,
-    })
+    const all = await (await visibleNotificationsQuery(user.id)).select('id')
+    const now = DateTime.local()
+    for (const n of all) {
+      await upsertState(user.id, n.id, { is_read: true, read_at: now })
+    }
+    return { ok: true }
+  }
+
+  // DELETE /notifications/:id — some só da visão deste usuário; a
+  // notificação e o histórico continuam intactos pra quem mais a vê.
+  async destroy(ctx) {
+    assertRole(ctx, ['admin', 'coordenador'])
+    const { params, response, user } = ctx
+    const n = await NotificationModel.find(params.id)
+    if (!n) return response.status(404).json({ message: 'Notificação não encontrada.' })
+
+    await upsertState(user.id, n.id, { dismissed: true, dismissed_at: DateTime.local() })
     return { ok: true }
   }
 
