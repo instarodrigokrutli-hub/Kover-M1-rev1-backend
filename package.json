@@ -8,7 +8,7 @@
     "postinstall": "node ace generate:manifest",
     "dev": "node dev-watch.js",
     "start": "node server.js",
-    "migration:run": "node ace migration:run",
+    "migration:run": "node ace migration:run --force",
     "migration:rollback": "node ace migration:rollback",
     "migration:fresh": "node ace migration:fresh",
     "test": "node ace test"
